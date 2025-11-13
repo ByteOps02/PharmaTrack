@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+
+    /* Module + Resolution for Vite 7+ */
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+
+    /* Better DX */
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+
+    /* Allows reading JSON in config files */
+    "resolveJsonModule": true,
+
+    /* Avoid TS errors in config files */
+    "strict": false,
+
+    /* Allows using import.meta, top-level await */
+    "target": "ESNext"
+  },
+
+  "include": ["vite.config.ts", "vite.config.*.ts"]
+}

@@ -1,0 +1,122 @@
+@import "tailwindcss";
+
+/* -----------------------------------
+   CSS Custom Properties (Design System)
+------------------------------------ */
+:root {
+  --background: 210 20% 98%;
+  --foreground: 215 25% 15%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 215 25% 15%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 215 25% 15%;
+
+  --primary: 210 80% 48%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 210 15% 95%;
+  --secondary-foreground: 215 25% 15%;
+
+  --muted: 210 15% 96%;
+  --muted-foreground: 215 15% 45%;
+
+  --accent: 180 65% 48%;
+  --accent-foreground: 0 0% 100%;
+
+  --destructive: 0 75% 55%;
+  --destructive-foreground: 0 0% 100%;
+
+  --success: 140 65% 45%;
+  --success-foreground: 0 0% 100%;
+
+  --warning: 38 90% 55%;
+  --warning-foreground: 0 0% 100%;
+
+  --border: 210 20% 88%;
+  --input: 210 20% 88%;
+  --ring: 210 80% 48%;
+
+  --radius: 0.75rem;
+
+  /* Sidebar */
+  --sidebar-background: 215 25% 15%;
+  --sidebar-foreground: 210 20% 95%;
+  --sidebar-primary: 210 80% 48%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 215 25% 20%;
+  --sidebar-accent-foreground: 210 20% 95%;
+  --sidebar-border: 215 20% 25%;
+  --sidebar-ring: 210 80% 48%;
+
+  /* Healthcare Tokens */
+  --medical-blue: 210 80% 48%;
+  --medical-teal: 180 65% 48%;
+  --clinical-gray: 210 10% 50%;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px hsl(215 25% 15% / 0.05);
+  --shadow-md: 0 4px 6px -1px hsl(215 25% 15% / 0.1);
+  --shadow-lg: 0 10px 15px -3px hsl(215 25% 15% / 0.1);
+  --shadow-xl: 0 20px 25px -5px hsl(215 25% 15% / 0.1);
+
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* -----------------------------------
+   Dark mode
+------------------------------------ */
+.dark {
+  --background: 215 30% 12%;
+  --foreground: 210 20% 95%;
+
+  --card: 215 25% 15%;
+  --card-foreground: 210 20% 95%;
+
+  --popover: 215 25% 15%;
+  --popover-foreground: 210 20% 95%;
+
+  --primary: 210 85% 55%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 215 25% 20%;
+  --secondary-foreground: 210 20% 95%;
+
+  --muted: 215 25% 18%;
+  --muted-foreground: 215 15% 65%;
+
+  --accent: 180 65% 48%;
+  --accent-foreground: 0 0% 100%;
+
+  --destructive: 0 75% 55%;
+  --destructive-foreground: 0 0% 100%;
+
+  --success: 140 65% 45%;
+  --success-foreground: 0 0% 100%;
+
+  --border: 215 20% 25%;
+  --input: 215 20% 25%;
+  --ring: 210 85% 55%;
+
+  --sidebar-background: 215 30% 10%;
+  --sidebar-foreground: 210 20% 95%;
+  --sidebar-primary: 210 85% 55%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 215 25% 15%;
+  --sidebar-accent-foreground: 210 20% 95%;
+  --sidebar-border: 215 20% 20%;
+  --sidebar-ring: 210 85% 55%;
+}
+
+/* -----------------------------------
+   Base Styles
+------------------------------------ */
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
