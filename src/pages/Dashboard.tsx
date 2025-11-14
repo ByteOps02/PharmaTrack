@@ -1,125 +1,380 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { StatsCard } from "@/components/StatsCard";
+import { StatCard } from "@/components/StatCard";
+import {
+  Package,
+  AlertTriangle,
+  TrendingUp,
+  ClipboardCheck,
+  DollarSign,
+  ShoppingCart,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Users, Calendar, Activity, FileText, ArrowRight, Clock, DollarSign } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { useSupabaseQuery } from "@/hooks/useSupabaseQuery";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+
+interface Batch {
+  id: string;
+  product_id: string;
+  expiry_date: string;
+  quantity: number;
+  products: {
+    name: string;
+  } | null;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  stock_quantity: number;
+}
+
+interface SalesOrder {
+  id: string;
+  customer_name: string;
+  total_amount: number;
+  status: string;
+  order_date: string;
+}
+
+interface QualityControlRecord {
+  inspection_date: string;
+  result: string;
+}
 
 const Dashboard = () => {
-  const navigate = useNavigate();
-  const recentActivities = [
-    { id: 1, patient: "Sarah Johnson", action: "Appointment scheduled", time: "10 mins ago", type: "appointment" },
-    { id: 2, patient: "Michael Chen", action: "Lab results ready", time: "25 mins ago", type: "lab" },
-    { id: 3, patient: "Emily Rodriguez", action: "Prescription updated", time: "1 hour ago", type: "prescription" },
-    { id: 4, patient: "David Thompson", action: "New patient registered", time: "2 hours ago", type: "registration" },
-  ];
+  const today = new Date();
+  const ninetyDaysFromNow = new Date();
+  ninetyDaysFromNow.setDate(today.getDate() + 90);
+
+  const {
+    data: expiringBatches,
+    loading: expiringBatchesLoading,
+    error: expiringBatchesError,
+  } = useSupabaseQuery<Batch[]>(
+    () =>
+      supabase
+        .from("batches")
+        .select("id, expiry_date, quantity, products(name)")
+        .lt("expiry_date", format(ninetyDaysFromNow, "yyyy-MM-dd"))
+        .order("expiry_date", { ascending: true }),
+    []
+  );
+
+  const {
+    data: lowStockItems,
+    loading: lowStockItemsLoading,
+    error: lowStockItemsError,
+  } = useSupabaseQuery<Product[]>(
+    () =>
+      supabase
+        .from("products")
+        .select("id, name, stock_quantity")
+        .lt("stock_quantity", 100) // Assuming 100 as a low stock threshold
+        .order("stock_quantity", { ascending: true }),
+    []
+  );
+
+  const {
+    data: recentOrders,
+    loading: recentOrdersLoading,
+    error: recentOrdersError,
+  } = useSupabaseQuery<SalesOrder[]>(
+    () =>
+      supabase
+        .from("sales_orders")
+        .select("id, customer_name, total_amount, status")
+        .order("order_date", { ascending: false })
+        .limit(5), // Displaying top 5 recent orders
+    []
+  );
+
+  const {
+    data: allProducts,
+    loading: allProductsLoading,
+    error: allProductsError,
+  } = useSupabaseQuery<Product[]>(
+    () => supabase.from("products").select("price, stock_quantity"),
+    []
+  );
+
+  const totalStockValue = allProducts?.reduce(
+    (sum, product) => sum + (product.price || 0) * (product.stock_quantity || 0),
+    0
+  );
+
+  const {
+    data: monthlySales,
+    loading: monthlySalesLoading,
+    error: monthlySalesError,
+  } = useSupabaseQuery<SalesOrder[]>(
+    () =>
+      supabase
+        .from("sales_orders")
+        .select("total_amount, order_date")
+        .gte("order_date", format(new Date(today.getFullYear(), today.getMonth(), 1), "yyyy-MM-dd"))
+        .lte("order_date", format(new Date(today.getFullYear(), today.getMonth() + 1, 0), "yyyy-MM-dd")),
+    []
+  );
+
+  const thisMonthSales = monthlySales?.reduce(
+    (sum, order) => sum + (order.total_amount || 0),
+    0
+  );
+
+  const {
+    data: qcRecords,
+    loading: qcRecordsLoading,
+    error: qcRecordsError,
+  } = useSupabaseQuery<QualityControlRecord[]>(
+    () =>
+      supabase
+        .from("quality_control_records")
+        .select("inspection_date, result")
+        .gte("inspection_date", format(new Date(today.setDate(today.getDate() - today.getDay())), "yyyy-MM-dd")) // Start of current week
+        .lte("inspection_date", format(new Date(today.setDate(today.getDate() - today.getDay() + 6)), "yyyy-MM-dd")), // End of current week
+    []
+  );
+
+  const qcTestsThisWeek = qcRecords?.length || 0;
+  const qcFailures = qcRecords?.filter((record) => record.result === "fail").length || 0;
+
+  if (
+    expiringBatchesLoading ||
+    lowStockItemsLoading ||
+    recentOrdersLoading ||
+    allProductsLoading ||
+    monthlySalesLoading ||
+    qcRecordsLoading
+  ) {
+    return <div>Loading dashboard data...</div>;
+  }
+
+  if (
+    expiringBatchesError ||
+    lowStockItemsError ||
+    recentOrdersError ||
+    allProductsError ||
+    monthlySalesError ||
+    qcRecordsError
+  ) {
+    return (
+      <div>
+        Error loading dashboard data:{" "}
+        {expiringBatchesError?.message ||
+          lowStockItemsError?.message ||
+          recentOrdersError?.message ||
+          allProductsError?.message ||
+          monthlySalesError?.message ||
+          qcRecordsError?.message}
+      </div>
+    );
+  }
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Welcome Section */}
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Welcome back, Dr. Admin</h1>
-          <p className="text-muted-foreground mt-1">Here's what's happening with your patients today.</p>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Welcome to PharmaTrack Management System
+          </p>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          <StatsCard
-            title="Upcoming Appointments"
-            value="15"
-            icon={<Calendar className="h-6 w-6" />}
-            trend={{ value: "3 today", positive: true }}
+        {/* KPI Cards */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="Total Stock Value"
+            value={`$${totalStockValue?.toFixed(2) || "0.00"}`}
+            icon={DollarSign}
+            trend={{ value: "+12.5% from last month", positive: true }}
+            variant="success"
           />
-          <StatsCard
-            title="New Patients Today"
-            value="5"
-            icon={<Users className="h-6 w-6" />}
-            trend={{ value: "2 urgent", positive: true }}
+          <StatCard
+            title="Expiring Soon (30 days)"
+            value={expiringBatches?.length.toString() || "0"}
+            icon={AlertTriangle}
+            variant="warning"
           />
-          <StatsCard
-            title="Pending Tasks"
-            value="8"
-            icon={<Activity className="h-6 w-6" />}
-            trend={{ value: "2 overdue", positive: false }}
+          <StatCard
+            title="Low Stock Alerts"
+            value={lowStockItems?.length.toString() || "0"}
+            icon={Package}
+            variant="danger"
           />
-          <StatsCard
-            title="Total Patients"
-            value="2,847"
-            icon={<FileText className="h-6 w-6" />}
-            trend={{ value: "12% from last month", positive: true }}
+          <StatCard
+            title="Pending Orders"
+            value={
+              recentOrders
+                ?.filter((order) => order.status === "pending").length.toString() || "0"
+            }
+            icon={ShoppingCart}
+            variant="default"
           />
         </div>
 
-        {/* Quick Actions & Recent Activity */}
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Quick Actions */}
-          <Card className="lg:col-span-1">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <StatCard
+            title="This Month Sales"
+            value={`$${thisMonthSales?.toFixed(2) || "0.00"}`}
+            icon={TrendingUp}
+            trend={{ value: "+8.2% from last month", positive: true }}
+            variant="success"
+          />
+          <StatCard
+            title="QC Tests (This Week)"
+            value={qcTestsThisWeek.toString()}
+            icon={ClipboardCheck}
+            variant="default"
+          />
+          <StatCard
+            title="QC Failures"
+            value={qcFailures.toString()}
+            icon={AlertTriangle}
+            variant="warning"
+          />
+        </div>
+
+        {/* Tables */}
+        <div className="grid gap-4 lg:grid-cols-2">
+          {/* Expiring Batches */}
+          <Card>
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
+              <CardTitle>Expiring Batches (Next 90 Days)</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <Button className="w-full justify-start" variant="outline" onClick={() => navigate("/patients")}>
-                <Users className="mr-2 h-4 w-4" />
-                Register New Patient
-              </Button>
-              <Button className="w-full justify-start" variant="outline" onClick={() => navigate("/appointments")}>
-                <Calendar className="mr-2 h-4 w-4" />
-                Schedule Appointment
-              </Button>
-              <Button className="w-full justify-start" variant="outline" onClick={() => navigate("/records")}>
-                <FileText className="mr-2 h-4 w-4" />
-                Create Clinical Note
-              </Button>
-              <Button className="w-full justify-start" variant="outline" onClick={() => navigate("/billing")}>
-                <DollarSign className="mr-2 h-4 w-4" />
-                Create Invoice
-              </Button>
-              <Button className="w-full justify-start" variant="outline" onClick={() => navigate("/analytics")}>
-                <Activity className="mr-2 h-4 w-4" />
-                View Analytics
-              </Button>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Batch ID</TableHead>
+                    <TableHead>Product</TableHead>
+                    <TableHead>Expiry Date</TableHead>
+                    <TableHead>Qty</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {expiringBatches?.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                        No expiring batches found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    expiringBatches?.map((batch) => (
+                      <TableRow key={batch.id}>
+                        <TableCell className="font-medium">{batch.id}</TableCell>
+                        <TableCell>{batch.products?.name || "N/A"}</TableCell>
+                        <TableCell>{format(new Date(batch.expiry_date), "yyyy-MM-dd")}</TableCell>
+                        <TableCell>{batch.quantity}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
 
-          {/* Recent Activity */}
-          <Card className="lg:col-span-2">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Recent Activity</CardTitle>
-              <Button variant="ghost" size="sm" onClick={() => navigate("/analytics")}>
-                View All
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
+          {/* Low Stock Items */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Low Stock Alerts</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {recentActivities.map((activity) => (
-                  <div
-                    key={activity.id}
-                    className="flex items-center justify-between border-b border-border pb-4 last:border-0 last:pb-0"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                        <Activity className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{activity.patient}</p>
-                        <p className="text-sm text-muted-foreground">{activity.action}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Clock className="h-4 w-4" />
-                      {activity.time}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>.
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Product</TableHead>
+                    <TableHead>Current</TableHead>
+                    <TableHead>Minimum</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {lowStockItems?.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                        No low stock items found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    lowStockItems?.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium">{item.name}</TableCell>
+                        <TableCell>{item.stock_quantity}</TableCell>
+                        <TableCell>100</TableCell> {/* Assuming 100 as minimum */}
+                        <TableCell>
+                          <Badge variant="destructive">Low</Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
           </Card>
         </div>
+
+        {/* Recent Orders */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Sales Orders</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Order ID</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                  {recentOrders?.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                        No recent sales orders found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    recentOrders?.map((order) => (
+                      <TableRow key={order.id}>
+                        <TableCell className="font-medium">{order.id}</TableCell>
+                        <TableCell>{order.customer_name}</TableCell>
+                        <TableCell>${order.total_amount?.toFixed(2) || "0.00"}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              order.status === "Delivered"
+                                ? "default"
+                                : order.status === "Dispatched"
+                                ? "secondary"
+                                : "outline"
+                            }
+                          >
+                            {order.status}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );
 };
 
 export default Dashboard;
+

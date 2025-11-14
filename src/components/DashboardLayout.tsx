@@ -1,82 +1,58 @@
-import type { ReactNode } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { cn } from "@/lib/utils";
-import { Activity, Users, Calendar, FileText, Settings, LayoutDashboard, DollarSign } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
+import { Bell, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface DashboardLayoutProps {
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
-const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Patients", href: "/patients", icon: Users },
-  { name: "Appointments", href: "/appointments", icon: Calendar },
-  { name: "Clinical Records", href: "/records", icon: FileText },
-  { name: "Billing", href: "/billing", icon: DollarSign },
-  { name: "Analytics", href: "/analytics", icon: Activity },
-  { name: "Settings", href: "/settings", icon: Settings },
-];
-
-export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
-  const location = useLocation();
-  const { logout } = useAuth();
+export function DashboardLayout({ children }: DashboardLayoutProps) {
+  const { user, signOut } = useAuth();
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Sidebar */}
-      <aside className="fixed inset-y-0 left-0 w-64 bg-sidebar border-r border-sidebar-border">
-        <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-6">
-          <img src="/favicon.png" alt="MedFlow HIS Logo" className="h-12 w-12" />
-          <div>
-            <h1 className="text-lg font-semibold text-sidebar-foreground">MedFlow HIS</h1>
-            <p className="text-xs text-sidebar-foreground/60">Healthcare Platform</p>
-          </div>
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full">
+        <AppSidebar />
+        <div className="flex flex-1 flex-col">
+          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-6">
+            <SidebarTrigger />
+            <div className="flex-1" />
+            <ThemeToggle />
+            <Button variant="ghost" size="icon">
+              <Bell className="h-5 w-5" />
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <User className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>
+                  {user?.email || "My Account"}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={signOut}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </header>
+          <main className="flex-1 p-6">{children}</main>
         </div>
-        
-        <nav className="space-y-1 p-4">
-          {navigation.map((item) => {
-            const isActive = location.pathname === item.href;
-            return (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                )}
-              >
-                <item.icon className="h-5 w-5" />
-                {item.name}
-              </Link>
-            );
-          })}
-        </nav>
-      </aside>
-
-      {/* Main content */}
-      <div className="pl-64">
-        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-border bg-card/95 backdrop-blur px-6">
-          <div className="flex items-center gap-4">
-            <h2 className="text-lg font-semibold text-foreground">
-              {navigation.find(item => item.href === location.pathname)?.name || "Dashboard"}
-            </h2>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" onClick={logout}>Logout</Button>
-            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <span className="text-sm font-medium text-primary">AD</span>
-            </div>
-          </div>
-        </header>
-        
-        <main className="p-6">
-          {children}
-        </main>
       </div>
-    </div>
+    </SidebarProvider>
   );
-};
+}

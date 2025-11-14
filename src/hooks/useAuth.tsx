@@ -1,143 +1,91 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import type { ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
-
-import { apiUrl } from '@/lib/api';
-const API_BASE_URL = apiUrl('/api/auth'); // Base URL for your backend auth API
-
-interface User {
-  id: string;
-  email: string;
-  fullName: string;
-}
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { User } from '@supabase/supabase-js';
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
-  login: (credentials: { email: string; password: string }) => Promise<boolean>;
-  signup: (userData: { fullName: string; email: string; password: string }) => Promise<boolean>;
-  logout: () => void;
-  updateUser: (userData: { fullName?: string; email?: string }) => Promise<boolean>;
+  loading: boolean;
+  authLoading: boolean;
+  authError: Error | null;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, options?: { data?: object; emailRedirectTo?: string }) => Promise<void>;
+  signOut: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | null>(null);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState<Error | null>(null);
 
-  // Load user and token from localStorage on initial render
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    const storedToken = localStorage.getItem('token');
-    if (storedUser && storedToken) {
-      setUser(JSON.parse(storedUser));
-      setToken(storedToken);
-    }
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setUser(session?.user || null);
+        setLoading(false);
+      }
+    );
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user || null);
+      setLoading(false);
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
-  const login = async (credentials: { email: string; password: string }): Promise<boolean> => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Login failed:', errorData.message);
-        return false;
+  const value = {
+    user,
+    loading,
+    authLoading,
+    authError,
+    signIn: async (email, password) => {
+      setAuthLoading(true);
+      setAuthError(null);
+      try {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+      } catch (error: unknown) {
+        setAuthError(error instanceof Error ? error : new Error(String(error)));
+        throw error;
+      } finally {
+        setAuthLoading(false);
       }
-
-      const data = await response.json();
-      const loggedInUser: User = { id: data.user.id, email: data.user.email, fullName: data.user.fullName };
-      setUser(loggedInUser);
-      setToken(data.token);
-      localStorage.setItem('user', JSON.stringify(loggedInUser));
-      localStorage.setItem('token', data.token);
-      navigate('/');
-      return true;
-    } catch (error) {
-      console.error('Login API call failed:', error);
-      return false;
-    }
-  };
-
-  const signup = async (userData: { fullName: string; email: string; password: string }): Promise<boolean> => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/signup`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Signup failed:', errorData.message);
-        return false;
+    },
+    signUp: async (email, password, options) => {
+      setAuthLoading(true);
+      setAuthError(null);
+      try {
+        const { error } = await supabase.auth.signUp({ email, password, options });
+        if (error) throw error;
+      } catch (error: unknown) {
+        setAuthError(error instanceof Error ? error : new Error(String(error)));
+        throw error;
+      } finally {
+        setAuthLoading(false);
       }
-
-      const data = await response.json();
-      const newUser: User = { id: data.user.id, email: data.user.email, fullName: data.user.fullName };
-      setUser(newUser);
-      setToken(data.token); // Backend currently returns token on signup
-      localStorage.setItem('user', JSON.stringify(newUser));
-      localStorage.setItem('token', data.token);
-      navigate('/');
-      return true;
-    } catch (error) {
-      console.error('Signup API call failed:', error);
-      return false;
-    }
-  };
-
-  const logout = () => {
-    console.log('User logged out');
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    navigate('/login');
-  };
-
-  const updateUser = async (userData: { fullName?: string; email?: string }): Promise<boolean> => {
-    if (!user || !token) return false;
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/user`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(userData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Update user failed:', errorData.message);
-        return false;
+    },
+    signOut: async () => {
+      setAuthLoading(true);
+      setAuthError(null);
+      try {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+      } catch (error: unknown) {
+        setAuthError(error instanceof Error ? error : new Error(String(error)));
+        throw error;
+      } finally {
+        setAuthLoading(false);
       }
-
-      const data = await response.json();
-      const updatedUser: User = { id: data.user.id, email: data.user.email, fullName: data.user.fullName };
-      setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      return true;
-    } catch (error) {
-      console.error('Update user API call failed:', error);
-      return false;
-    }
+    },
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, signup, logout, updateUser }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
@@ -145,7 +93,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (context === null) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
