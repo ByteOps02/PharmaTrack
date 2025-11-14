@@ -11,7 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Search, Plus, MoreVertical, Edit, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
@@ -27,12 +26,12 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { usePatients, Patient } from "@/hooks/usePatients";
+import { usePatients } from "@/hooks/usePatients";
+import type { Patient } from "@/hooks/usePatients";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   Form,
   FormControl,
@@ -42,7 +41,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
 
 const formSchema = z.object({

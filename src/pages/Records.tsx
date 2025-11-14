@@ -14,7 +14,8 @@ import {
 } from "@/components/ui/table";
 import { Search, Filter } from "lucide-react";
 import { usePatients } from "@/hooks/usePatients";
-import { useClinicalRecords, ClinicalRecord } from "@/hooks/useClinicalRecords";
+import { useClinicalRecords } from "@/hooks/useClinicalRecords";
+import type { ClinicalRecord } from "@/hooks/useClinicalRecords";
 import { useNavigate } from "react-router-dom";
 
 const Records = () => {
@@ -159,5 +160,3 @@ const Records = () => {
 };
 
 export default Records;
-
-

@@ -23,7 +23,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
-import { DateRange } from "react-day-picker";
+import type { DateRange } from "react-day-picker";
 
 const Analytics = () => {
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
@@ -230,7 +230,7 @@ const Analytics = () => {
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        label={({ name, percent }) => `${name}: ${percent ? (percent * 100).toFixed(0) : 0}%`}
                         outerRadius={100}
                         fill="#8884d8"
                         dataKey="value"
@@ -329,4 +329,3 @@ const Analytics = () => {
 };
 
 export default Analytics;
-

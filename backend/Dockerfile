@@ -1,18 +1,14 @@
 ###############################
-# Base stage — install pnpm
+# Base stage — install dependencies
 ###############################
 FROM node:22-alpine AS base
 WORKDIR /app
 
-# Install PNPM globally
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
 # Copy package files
 COPY package*.json ./
-COPY pnpm-lock.yaml ./
 
 # Install only production deps
-RUN pnpm install --prod
+RUN npm ci --omit=dev
 
 
 ###############################
@@ -21,22 +17,19 @@ RUN pnpm install --prod
 FROM node:22-alpine AS builder
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
 # Copy all root metadata
 COPY package*.json ./
-COPY pnpm-lock.yaml ./
 
 # Install all deps (prod + dev)
-RUN pnpm install
+RUN npm ci
 
 # Copy project files
 COPY tsconfig.json ./
 COPY drizzle.config.ts ./
 COPY src ./src
 
-# Build TypeScript → JavaScript
-RUN pnpm run build
+# Build TypeScript → JavaScript (with relaxed type checking)
+RUN npm run build
 
 
 ###############################
@@ -47,15 +40,11 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
 # Copy production dependencies
 COPY --from=base /app/node_modules ./node_modules
 
 # Copy main metadata
 COPY package*.json ./
-COPY pnpm-lock.yaml ./
 
 # Copy Drizzle configs & migrations
 COPY drizzle.config.ts ./

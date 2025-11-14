@@ -21,9 +21,9 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Plus, Clock, User, MapPin, Phone, Trash2, Edit } from "lucide-react";
-import { useAppointments, Appointment } from "@/hooks/useAppointments";
+import { useAppointments } from "@/hooks/useAppointments";
+import type { Appointment } from "@/hooks/useAppointments";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -54,7 +54,7 @@ const formSchema = z.object({
 
 const Appointments = () => {
   const { appointments, loading, error, fetchAppointments, addAppointment, updateAppointment, deleteAppointment, checkInAppointment } = useAppointments();
-  const { patients, fetchPatients } = usePatients(); // To select patient for appointment
+  const { patients } = usePatients(); // To select patient for appointment
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [open, setOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);

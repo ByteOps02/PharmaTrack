@@ -18,7 +18,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -34,7 +33,7 @@ function toCents(value: string | number): number {
 }
 
 const Billing = () => {
-  const { invoices, payments, claims, providers, loading, error, addInvoice, addPayment, addClaim } = useBilling();
+  const { invoices, payments, claims, loading, error, addInvoice, addPayment, addClaim } = useBilling();
   const { patients } = usePatients();
   const [searchQuery, setSearchQuery] = useState("");
   const [openInvoice, setOpenInvoice] = useState(false);

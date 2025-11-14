@@ -3,7 +3,7 @@ import { defineConfig } from "drizzle-kit";
 export default defineConfig({
   schema: "./src/db/schema.ts",
   out: "./drizzle",
-  dialect: "postgres",
+  dialect: "postgresql",
 
   dbCredentials: {
     url:
@@ -12,14 +12,5 @@ export default defineConfig({
   },
 
   verbose: true,
-  strict: true,
-
-  // ✅ Multi-schema support (correct key)
-  schemas: ["public"],
-
-  // ✅ Migrations settings
-  migrations: {
-    table: "__drizzle_migrations__",
-    schema: "public",
-  },
+  strict: true
 });

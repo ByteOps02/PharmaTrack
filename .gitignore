@@ -1,6 +1,4 @@
-############################################
 # Logs
-############################################
 logs
 *.log
 npm-debug.log*
@@ -9,90 +7,18 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-debug.log
-error.log
+node_modules
+dist
+dist-ssr
+*.local
 
-############################################
-# Dependencies
-############################################
-node_modules/
-
-############################################
-# Build outputs
-############################################
-dist/
-dist-ssr/
-build/
-out/
-coverage/
-
-# For monorepo (frontend + backend)
-frontend/dist/
-backend/dist/
-
-############################################
-# Vite cache
-############################################
-.vite/
-.vite-deps/
-
-############################################
-# TypeScript
-############################################
-*.tsbuildinfo
-tsconfig.tsbuildinfo
-
-############################################
-# Environment files (VERY IMPORTANT)
-############################################
-.env
-.env.*
-.env.local
-.env.production.local
-.env.development.local
-.env.test.local
-
-############################################
-# Editors / IDEs
-############################################
+# Editor directories and files
 .vscode/*
 !.vscode/extensions.json
-.idea/
-*.sw?
+.idea
+.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
-
-############################################
-# OS files
-############################################
-.DS_Store
-Thumbs.db
-
-############################################
-# Temporary / cache files
-############################################
-*.local
-*.cache
-.cache/
-
-############################################
-# Docker
-############################################
-docker-compose.override.yml
-docker-data/
-.docker/
-
-############################################
-# Drizzle ORM
-############################################
-drizzle/*.sqlite
-drizzle/*.sqlite-journal
-drizzle/migrations/*.tmp
-
-############################################
-# Misc
-############################################
-*.bak
-*.backup
+*.sw?

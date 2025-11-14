@@ -5,11 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Search, Plus, FileText, Activity, Pill, FlaskConical, Heart, AlertCircle, Edit, Trash2 } from "lucide-react";
+import { Plus, FileText, Activity, Pill, FlaskConical, Heart, AlertCircle, Edit, Trash2 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { usePatients } from "@/hooks/usePatients";
-import { useClinicalRecords, ClinicalRecord } from "@/hooks/useClinicalRecords";
+import { useClinicalRecords } from "@/hooks/useClinicalRecords";
+import type { ClinicalRecord } from "@/hooks/useClinicalRecords";
 import { useVitals } from "@/hooks/useVitals";
 import { useMedications } from "@/hooks/useMedications";
 import { useLabResults } from "@/hooks/useLabResults";
@@ -60,7 +60,6 @@ const ClinicalRecords = () => {
   const { allergies } = useAllergies(patientIdNum);
   const { conditions } = useConditions(patientIdNum);
 
-  const [searchQuery, setSearchQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<ClinicalRecord | null>(null);
 
@@ -463,4 +462,3 @@ const ClinicalRecords = () => {
 };
 
 export default ClinicalRecords;
-

@@ -67,9 +67,9 @@ const Settings = () => {
     },
   });
 
-  const onProfileSubmit = (values: z.infer<typeof profileFormSchema>) => {
+  const onProfileSubmit = async (values: z.infer<typeof profileFormSchema>) => {
     if (user) {
-      const success = updateUser({ fullName: values.fullName, email: values.email });
+      const success = await updateUser({ fullName: values.fullName, email: values.email });
       if (success) {
         toast({
           title: "Profile updated!",
