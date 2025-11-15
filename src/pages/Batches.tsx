@@ -1,3 +1,4 @@
+import { AddBatchDialog } from "@/components/forms/AddBatchDialog";
 import { useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -116,10 +117,7 @@ const Batches = () => {
               Track batch-level inventory with full traceability
             </p>
           </div>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Batch
-          </Button>
+          <AddBatchDialog />
         </div>
 
         {/* Filters */}

@@ -18,9 +18,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { useSupabaseQuery } from "@/hooks/useSupabaseQuery";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Batch {
   id: string;
@@ -51,99 +52,126 @@ interface QualityControlRecord {
   result: string;
 }
 
-const Dashboard = () => {
+const fetchExpiringBatches = async () => {
   const today = new Date();
   const ninetyDaysFromNow = new Date();
   ninetyDaysFromNow.setDate(today.getDate() + 90);
 
+  const { data, error } = await supabase
+    .from("batches")
+    .select("id, expiry_date, quantity, products(name)")
+    .lt("expiry_date", format(ninetyDaysFromNow, "yyyy-MM-dd"))
+    .order("expiry_date", { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+const fetchLowStockItems = async () => {
+  const { data, error } = await supabase
+    .from("products")
+    .select("id, name, stock_quantity")
+    .lt("stock_quantity", 100) // Assuming 100 as a low stock threshold
+    .order("stock_quantity", { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+const fetchRecentOrders = async () => {
+  const { data, error } = await supabase
+    .from("sales_orders")
+    .select("id, customer_name, total_amount, status")
+    .order("order_date", { ascending: false })
+    .limit(5); // Displaying top 5 recent orders
+
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+const fetchTotalStockValue = async () => {
+  const { data, error } = await supabase.rpc('calculate_total_stock_value');
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+const fetchMonthlySales = async () => {
+  const { data, error } = await supabase.rpc('calculate_monthly_sales');
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+const fetchQcRecords = async () => {
+  const today = new Date();
+  const { data, error } = await supabase
+    .from("quality_control_records")
+    .select("inspection_date, result")
+    .gte("inspection_date", format(new Date(today.setDate(today.getDate() - today.getDay())), "yyyy-MM-dd")) // Start of current week
+    .lte("inspection_date", format(new Date(today.setDate(today.getDate() - today.getDay() + 6)), "yyyy-MM-dd")); // End of current week
+
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+
+const Dashboard = () => {
+  const { role } = useAuth();
+
   const {
     data: expiringBatches,
-    loading: expiringBatchesLoading,
+    isLoading: expiringBatchesLoading,
     error: expiringBatchesError,
-  } = useSupabaseQuery<Batch[]>(
-    () =>
-      supabase
-        .from("batches")
-        .select("id, expiry_date, quantity, products(name)")
-        .lt("expiry_date", format(ninetyDaysFromNow, "yyyy-MM-dd"))
-        .order("expiry_date", { ascending: true }),
-    []
-  );
+  } = useQuery<Batch[], Error>({
+    queryKey: ["expiringBatches"],
+    queryFn: fetchExpiringBatches,
+  });
 
   const {
     data: lowStockItems,
-    loading: lowStockItemsLoading,
+    isLoading: lowStockItemsLoading,
     error: lowStockItemsError,
-  } = useSupabaseQuery<Product[]>(
-    () =>
-      supabase
-        .from("products")
-        .select("id, name, stock_quantity")
-        .lt("stock_quantity", 100) // Assuming 100 as a low stock threshold
-        .order("stock_quantity", { ascending: true }),
-    []
-  );
+  } = useQuery<Product[], Error>({
+    queryKey: ["lowStockItems"],
+    queryFn: fetchLowStockItems,
+  });
 
   const {
     data: recentOrders,
-    loading: recentOrdersLoading,
+    isLoading: recentOrdersLoading,
     error: recentOrdersError,
-  } = useSupabaseQuery<SalesOrder[]>(
-    () =>
-      supabase
-        .from("sales_orders")
-        .select("id, customer_name, total_amount, status")
-        .order("order_date", { ascending: false })
-        .limit(5), // Displaying top 5 recent orders
-    []
-  );
+  } = useQuery<SalesOrder[], Error>({
+    queryKey: ["recentOrders"],
+    queryFn: fetchRecentOrders,
+  });
 
   const {
-    data: allProducts,
-    loading: allProductsLoading,
-    error: allProductsError,
-  } = useSupabaseQuery<Product[]>(
-    () => supabase.from("products").select("price, stock_quantity"),
-    []
-  );
-
-  const totalStockValue = allProducts?.reduce(
-    (sum, product) => sum + (product.price || 0) * (product.stock_quantity || 0),
-    0
-  );
+    data: totalStockValue,
+    isLoading: totalStockValueLoading,
+    error: totalStockValueError,
+  } = useQuery<number, Error>({
+    queryKey: ["totalStockValue"],
+    queryFn: fetchTotalStockValue,
+    enabled: role === 'admin' || role === 'manager',
+  });
 
   const {
-    data: monthlySales,
-    loading: monthlySalesLoading,
+    data: thisMonthSales,
+    isLoading: monthlySalesLoading,
     error: monthlySalesError,
-  } = useSupabaseQuery<SalesOrder[]>(
-    () =>
-      supabase
-        .from("sales_orders")
-        .select("total_amount, order_date")
-        .gte("order_date", format(new Date(today.getFullYear(), today.getMonth(), 1), "yyyy-MM-dd"))
-        .lte("order_date", format(new Date(today.getFullYear(), today.getMonth() + 1, 0), "yyyy-MM-dd")),
-    []
-  );
-
-  const thisMonthSales = monthlySales?.reduce(
-    (sum, order) => sum + (order.total_amount || 0),
-    0
-  );
+  } = useQuery<number, Error>({
+    queryKey: ["monthlySales"],
+    queryFn: fetchMonthlySales,
+    enabled: role === 'admin' || role === 'manager',
+  });
 
   const {
     data: qcRecords,
-    loading: qcRecordsLoading,
+    isLoading: qcRecordsLoading,
     error: qcRecordsError,
-  } = useSupabaseQuery<QualityControlRecord[]>(
-    () =>
-      supabase
-        .from("quality_control_records")
-        .select("inspection_date, result")
-        .gte("inspection_date", format(new Date(today.setDate(today.getDate() - today.getDay())), "yyyy-MM-dd")) // Start of current week
-        .lte("inspection_date", format(new Date(today.setDate(today.getDate() - today.getDay() + 6)), "yyyy-MM-dd")), // End of current week
-    []
-  );
+  } = useQuery<QualityControlRecord[], Error>({
+    queryKey: ["qcRecords"],
+    queryFn: fetchQcRecords,
+  });
 
   const qcTestsThisWeek = qcRecords?.length || 0;
   const qcFailures = qcRecords?.filter((record) => record.result === "fail").length || 0;
@@ -152,30 +180,18 @@ const Dashboard = () => {
     expiringBatchesLoading ||
     lowStockItemsLoading ||
     recentOrdersLoading ||
-    allProductsLoading ||
+    totalStockValueLoading ||
     monthlySalesLoading ||
     qcRecordsLoading
   ) {
     return <div>Loading dashboard data...</div>;
   }
 
-  if (
-    expiringBatchesError ||
-    lowStockItemsError ||
-    recentOrdersError ||
-    allProductsError ||
-    monthlySalesError ||
-    qcRecordsError
-  ) {
+  const anyError = expiringBatchesError || lowStockItemsError || recentOrdersError || totalStockValueError || monthlySalesError || qcRecordsError;
+  if (anyError) {
     return (
       <div>
-        Error loading dashboard data:{" "}
-        {expiringBatchesError?.message ||
-          lowStockItemsError?.message ||
-          recentOrdersError?.message ||
-          allProductsError?.message ||
-          monthlySalesError?.message ||
-          qcRecordsError?.message}
+        Error loading dashboard data: {anyError.message}
       </div>
     );
   }
@@ -192,13 +208,15 @@ const Dashboard = () => {
 
         {/* KPI Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            title="Total Stock Value"
-            value={`$${totalStockValue?.toFixed(2) || "0.00"}`}
-            icon={DollarSign}
-            trend={{ value: "+12.5% from last month", positive: true }}
-            variant="success"
-          />
+          {(role === 'admin' || role === 'manager') && (
+            <StatCard
+              title="Total Stock Value"
+              value={`$${totalStockValue?.toFixed(2) || "0.00"}`}
+              icon={DollarSign}
+              trend={{ value: "+12.5% from last month", positive: true }}
+              variant="success"
+            />
+          )}
           <StatCard
             title="Expiring Soon (30 days)"
             value={expiringBatches?.length.toString() || "0"}
@@ -223,13 +241,15 @@ const Dashboard = () => {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <StatCard
-            title="This Month Sales"
-            value={`$${thisMonthSales?.toFixed(2) || "0.00"}`}
-            icon={TrendingUp}
-            trend={{ value: "+8.2% from last month", positive: true }}
-            variant="success"
-          />
+          {(role === 'admin' || role === 'manager') && (
+            <StatCard
+              title="This Month Sales"
+              value={`$${thisMonthSales?.toFixed(2) || "0.00"}`}
+              icon={TrendingUp}
+              trend={{ value: "+8.2% from last month", positive: true }}
+              variant="success"
+            />
+          )}
           <StatCard
             title="QC Tests (This Week)"
             value={qcTestsThisWeek.toString()}

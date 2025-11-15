@@ -6,27 +6,33 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
-import { useSupabaseQuery } from "@/hooks/useSupabaseQuery";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+
+const fetchSettings = async () => {
+  const { data, error } = await supabase
+    .from("settings")
+    .select("key, value");
+
+  if (error) throw new Error(error.message);
+  return data;
+};
 
 const Settings = () => {
   const { user } = useAuth();
 
   const {
     data: userSettings,
-    loading: settingsLoading,
+    isLoading: settingsLoading,
     error: settingsError,
-  } = useSupabaseQuery<{ setting_key: string; setting_value: string }[]>(
-    () =>
-      supabase
-        .from("settings")
-        .select("setting_key, setting_value")
-        .eq("user_id", user?.id || ""),
-    [user?.id]
-  );
+  } = useQuery({
+    queryKey: ["settings"],
+    queryFn: () => fetchSettings(),
+    enabled: !!user,
+  });
 
   const settingsMap = userSettings?.reduce((acc, setting) => {
-    acc[setting.setting_key] = setting.setting_value;
+    acc[setting.key] = setting.value;
     return acc;
   }, {} as Record<string, string>);
 

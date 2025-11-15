@@ -233,75 +233,130 @@ ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
 
+
+-- Helper function to check user role
+CREATE OR REPLACE FUNCTION public.get_user_role(user_id UUID)
+RETURNS TEXT AS $$
+DECLARE
+  role_name TEXT;
+BEGIN
+  SELECT r.name INTO role_name
+  FROM public.user_roles ur
+  JOIN public.roles r ON ur.role_id = r.id
+  WHERE ur.user_id = get_user_role.user_id
+  LIMIT 1;
+  RETURN role_name;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- RLS Policies for products
+DROP POLICY IF EXISTS "Users can view all products" ON public.products;
 CREATE POLICY "Users can view all products" ON public.products FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Users can insert their own products" ON public.products FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update their own products" ON public.products FOR UPDATE TO authenticated USING (auth.uid() = user_id);
-CREATE POLICY "Users can delete their own products" ON public.products FOR DELETE TO authenticated USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins can manage products" ON public.products;
+CREATE POLICY "Admins can manage products" ON public.products FOR ALL TO authenticated
+USING (public.get_user_role(auth.uid()) IN ('admin', 'manager'))
+WITH CHECK (public.get_user_role(auth.uid()) IN ('admin', 'manager'));
 
 -- RLS Policies for batches
+DROP POLICY IF EXISTS "Users can view all batches" ON public.batches;
 CREATE POLICY "Users can view all batches" ON public.batches FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Users can insert their own batches" ON public.batches FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update their own batches" ON public.batches FOR UPDATE TO authenticated USING (auth.uid() = user_id);
-CREATE POLICY "Users can delete their own batches" ON public.batches FOR DELETE TO authenticated USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins and managers can manage batches" ON public.batches;
+CREATE POLICY "Admins and managers can manage batches" ON public.batches FOR ALL TO authenticated
+USING (public.get_user_role(auth.uid()) IN ('admin', 'manager'))
+WITH CHECK (public.get_user_role(auth.uid()) IN ('admin', 'manager'));
 
 -- RLS Policies for suppliers
+DROP POLICY IF EXISTS "Users can view all suppliers" ON public.suppliers;
 CREATE POLICY "Users can view all suppliers" ON public.suppliers FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Users can insert their own suppliers" ON public.suppliers FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update their own suppliers" ON public.suppliers FOR UPDATE TO authenticated USING (auth.uid() = user_id);
-CREATE POLICY "Users can delete their own suppliers" ON public.suppliers FOR DELETE TO authenticated USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins and managers can manage suppliers" ON public.suppliers;
+CREATE POLICY "Admins and managers can manage suppliers" ON public.suppliers FOR ALL TO authenticated
+USING (public.get_user_role(auth.uid()) IN ('admin', 'manager'))
+WITH CHECK (public.get_user_role(auth.uid()) IN ('admin', 'manager'));
 
 -- RLS Policies for purchase_orders
+DROP POLICY IF EXISTS "Users can view all purchase orders" ON public.purchase_orders;
 CREATE POLICY "Users can view all purchase orders" ON public.purchase_orders FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Users can insert their own purchase orders" ON public.purchase_orders FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update their own purchase orders" ON public.purchase_orders FOR UPDATE TO authenticated USING (auth.uid() = user_id);
-CREATE POLICY "Users can delete their own purchase orders" ON public.purchase_orders FOR DELETE TO authenticated USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins and managers can manage purchase orders" ON public.purchase_orders;
+CREATE POLICY "Admins and managers can manage purchase orders" ON public.purchase_orders FOR ALL TO authenticated
+USING (public.get_user_role(auth.uid()) IN ('admin', 'manager'))
+WITH CHECK (public.get_user_role(auth.uid()) IN ('admin', 'manager'));
 
 -- RLS Policies for purchase_order_items
+DROP POLICY IF EXISTS "Users can view all purchase order items" ON public.purchase_order_items;
 CREATE POLICY "Users can view all purchase order items" ON public.purchase_order_items FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Users can insert purchase order items" ON public.purchase_order_items FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Users can update purchase order items" ON public.purchase_order_items FOR UPDATE TO authenticated USING (true);
-CREATE POLICY "Users can delete purchase order items" ON public.purchase_order_items FOR DELETE TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "Admins and managers can manage purchase order items" ON public.purchase_order_items;
+CREATE POLICY "Admins and managers can manage purchase order items" ON public.purchase_order_items FOR ALL TO authenticated
+USING (public.get_user_role(auth.uid()) IN ('admin', 'manager'))
+WITH CHECK (public.get_user_role(auth.uid()) IN ('admin', 'manager'));
 
 -- RLS Policies for sales_orders
+DROP POLICY IF EXISTS "Users can view all sales orders" ON public.sales_orders;
 CREATE POLICY "Users can view all sales orders" ON public.sales_orders FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Users can insert their own sales orders" ON public.sales_orders FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update their own sales orders" ON public.sales_orders FOR UPDATE TO authenticated USING (auth.uid() = user_id);
-CREATE POLICY "Users can delete their own sales orders" ON public.sales_orders FOR DELETE TO authenticated USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins and managers can manage sales orders" ON public.sales_orders;
+CREATE POLICY "Admins and managers can manage sales orders" ON public.sales_orders FOR ALL TO authenticated
+USING (public.get_user_role(auth.uid()) IN ('admin', 'manager'))
+WITH CHECK (public.get_user_role(auth.uid()) IN ('admin', 'manager'));
 
 -- RLS Policies for sales_order_items
+DROP POLICY IF EXISTS "Users can view all sales order items" ON public.sales_order_items;
 CREATE POLICY "Users can view all sales order items" ON public.sales_order_items FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Users can insert sales order items" ON public.sales_order_items FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Users can update sales order items" ON public.sales_order_items FOR UPDATE TO authenticated USING (true);
-CREATE POLICY "Users can delete sales order items" ON public.sales_order_items FOR DELETE TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "Admins and managers can manage sales order items" ON public.sales_order_items;
+CREATE POLICY "Admins and managers can manage sales order items" ON public.sales_order_items FOR ALL TO authenticated
+USING (public.get_user_role(auth.uid()) IN ('admin', 'manager'))
+WITH CHECK (public.get_user_role(auth.uid()) IN ('admin', 'manager'));
 
 -- RLS Policies for quality_control_records
+DROP POLICY IF EXISTS "Users can view all QC records" ON public.quality_control_records;
 CREATE POLICY "Users can view all QC records" ON public.quality_control_records FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Users can insert QC records" ON public.quality_control_records FOR INSERT TO authenticated WITH CHECK (auth.uid() = inspector_id);
-CREATE POLICY "Users can update their own QC records" ON public.quality_control_records FOR UPDATE TO authenticated USING (auth.uid() = inspector_id);
-CREATE POLICY "Users can delete their own QC records" ON public.quality_control_records FOR DELETE TO authenticated USING (auth.uid() = inspector_id);
+
+DROP POLICY IF EXISTS "Admins, managers, and inspectors can manage QC records" ON public.quality_control_records;
+CREATE POLICY "Admins, managers, and inspectors can manage QC records" ON public.quality_control_records FOR ALL TO authenticated
+USING (public.get_user_role(auth.uid()) IN ('admin', 'manager', 'inspector'))
+WITH CHECK (public.get_user_role(auth.uid()) IN ('admin', 'manager', 'inspector'));
 
 -- RLS Policies for roles
+DROP POLICY IF EXISTS "Everyone can view roles" ON public.roles;
 CREATE POLICY "Everyone can view roles" ON public.roles FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Authenticated users can insert roles" ON public.roles FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Authenticated users can update roles" ON public.roles FOR UPDATE TO authenticated USING (true);
-CREATE POLICY "Authenticated users can delete roles" ON public.roles FOR DELETE TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "Admins can manage roles" ON public.roles;
+CREATE POLICY "Admins can manage roles" ON public.roles FOR ALL TO authenticated
+USING (public.get_user_role(auth.uid()) = 'admin')
+WITH CHECK (public.get_user_role(auth.uid()) = 'admin');
 
 -- RLS Policies for user_roles
+DROP POLICY IF EXISTS "Users can view all user roles" ON public.user_roles;
 CREATE POLICY "Users can view all user roles" ON public.user_roles FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Users can insert user roles" ON public.user_roles FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Users can update user roles" ON public.user_roles FOR UPDATE TO authenticated USING (true);
-CREATE POLICY "Users can delete user roles" ON public.user_roles FOR DELETE TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "Admins can manage user roles" ON public.user_roles;
+CREATE POLICY "Admins can manage user roles" ON public.user_roles FOR ALL TO authenticated
+USING (public.get_user_role(auth.uid()) = 'admin')
+WITH CHECK (public.get_user_role(auth.uid()) = 'admin');
 
 -- RLS Policies for reports
+DROP POLICY IF EXISTS "Users can view all reports" ON public.reports;
 CREATE POLICY "Users can view all reports" ON public.reports FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Users can insert their own reports" ON public.reports FOR INSERT TO authenticated WITH CHECK (auth.uid() = generated_by);
-CREATE POLICY "Users can update their own reports" ON public.reports FOR UPDATE TO authenticated USING (auth.uid() = generated_by);
-CREATE POLICY "Users can delete their own reports" ON public.reports FOR DELETE TO authenticated USING (auth.uid() = generated_by);
+
+DROP POLICY IF EXISTS "Admins and managers can manage reports" ON public.reports;
+CREATE POLICY "Admins and managers can manage reports" ON public.reports FOR ALL TO authenticated
+USING (public.get_user_role(auth.uid()) IN ('admin', 'manager'))
+WITH CHECK (public.get_user_role(auth.uid()) IN ('admin', 'manager'));
 
 -- RLS Policies for settings
+DROP POLICY IF EXISTS "Everyone can view settings" ON public.settings;
 CREATE POLICY "Everyone can view settings" ON public.settings FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Authenticated users can manage settings" ON public.settings FOR ALL TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "Admins can manage settings" ON public.settings;
+CREATE POLICY "Admins can manage settings" ON public.settings FOR ALL TO authenticated
+USING (public.get_user_role(auth.uid()) = 'admin')
+WITH CHECK (public.get_user_role(auth.uid()) = 'admin');
+
 
 -- Create triggers for updated_at columns
 CREATE TRIGGER update_products_updated_at BEFORE UPDATE ON public.products FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
@@ -311,3 +366,29 @@ CREATE TRIGGER update_purchase_orders_updated_at BEFORE UPDATE ON public.purchas
 CREATE TRIGGER update_sales_orders_updated_at BEFORE UPDATE ON public.sales_orders FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 CREATE TRIGGER update_roles_updated_at BEFORE UPDATE ON public.roles FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 CREATE TRIGGER update_settings_updated_at BEFORE UPDATE ON public.settings FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+-- Function to calculate total stock value
+CREATE OR REPLACE FUNCTION public.calculate_total_stock_value()
+RETURNS DECIMAL AS $$
+DECLARE
+  total_value DECIMAL;
+BEGIN
+  SELECT SUM(price * stock_quantity) INTO total_value
+  FROM public.products;
+  RETURN total_value;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to calculate this month's sales
+CREATE OR REPLACE FUNCTION public.calculate_monthly_sales()
+RETURNS DECIMAL AS $$
+DECLARE
+  total_sales DECIMAL;
+BEGIN
+  SELECT SUM(total_amount) INTO total_sales
+  FROM public.sales_orders
+  WHERE order_date >= date_trunc('month', CURRENT_DATE)
+    AND order_date < date_trunc('month', CURRENT_DATE) + interval '1 month';
+  RETURN total_sales;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

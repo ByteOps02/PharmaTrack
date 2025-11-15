@@ -1,3 +1,4 @@
+import { AddPurchaseOrderDialog } from "@/components/forms/AddPurchaseOrderDialog";
 import { useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import {
@@ -104,10 +105,7 @@ const PurchaseOrders = () => {
               Manage and track all purchase orders from suppliers
             </p>
           </div>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New Purchase Order
-          </Button>
+          <AddPurchaseOrderDialog />
         </div>
 
         {/* Filters */}

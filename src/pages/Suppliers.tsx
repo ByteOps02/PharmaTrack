@@ -1,3 +1,4 @@
+import { AddSupplierDialog } from "@/components/forms/AddSupplierDialog";
 import { useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import {
@@ -80,10 +81,7 @@ const Suppliers = () => {
               Manage your supplier database and contact information
             </p>
           </div>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Supplier
-          </Button>
+          <AddSupplierDialog />
         </div>
 
         {/* Filters */}

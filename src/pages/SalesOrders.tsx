@@ -1,3 +1,4 @@
+import { AddSalesOrderDialog } from "@/components/forms/AddSalesOrderDialog";
 import { useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import {
@@ -94,10 +95,7 @@ const SalesOrders = () => {
               Manage and track all sales orders to customers
             </p>
           </div>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New Sales Order
-          </Button>
+          <AddSalesOrderDialog />
         </div>
 
         {/* Filters */}

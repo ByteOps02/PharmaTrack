@@ -1,3 +1,4 @@
+import { AddQCTestDialog } from "@/components/forms/AddQCTestDialog";
 import { useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import {
@@ -104,10 +105,7 @@ const QualityControl = () => {
               Track and manage quality control tests for batches
             </p>
           </div>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New QC Test
-          </Button>
+          <AddQCTestDialog />
         </div>
 
         {/* Filters */}

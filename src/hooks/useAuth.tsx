@@ -4,6 +4,7 @@ import { User } from '@supabase/supabase-js';
 
 interface AuthContextType {
   user: User | null;
+  role: string | null;
   loading: boolean;
   authLoading: boolean;
   authError: Error | null;
@@ -16,20 +17,44 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<Error | null>(null);
 
   useEffect(() => {
+    const fetchUserRole = async (userId: string) => {
+      try {
+        const { data, error } = await supabase.rpc('get_user_role', { user_id: userId });
+        if (error) throw error;
+        setRole(data);
+      } catch (error) {
+        console.error('Error fetching user role:', (error as Error).message);
+        setRole(null);
+      }
+    };
+
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setUser(session?.user || null);
+        const currentUser = session?.user || null;
+        setUser(currentUser);
+        if (currentUser) {
+          await fetchUserRole(currentUser.id);
+        } else {
+          setRole(null);
+        }
         setLoading(false);
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user || null);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      const currentUser = session?.user || null;
+      setUser(currentUser);
+      if (currentUser) {
+        await fetchUserRole(currentUser.id);
+      } else {
+        setRole(null);
+      }
       setLoading(false);
     });
 
@@ -40,6 +65,7 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     user,
+    role,
     loading,
     authLoading,
     authError,
@@ -75,6 +101,7 @@ export const AuthProvider = ({ children }) => {
       try {
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
+        setRole(null);
       } catch (error: unknown) {
         setAuthError(error instanceof Error ? error : new Error(String(error)));
         throw error;
